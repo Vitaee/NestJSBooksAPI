@@ -1,0 +1,83 @@
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: ./compose/postgres/Dockerfile
+      args:
+        - POSTGRES_DB=${POSTGRES_DB}
+        - POSTGRES_USER=${DB_USERNAME}
+        - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    container_name: books_api_postgres
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - books_api_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Node.js Application Service
+  app:
+    build:
+      context: .
+      dockerfile: ./compose/node/Dockerfile
+      target: 'development'
+    container_name: books_api_app
+    env_file:
+      - .env
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - ./src:/app/src
+    networks:
+      - books_api_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MinIO Object Storage Service (Optional)
+  minio:
+    image: minio/minio:latest
+    container_name: books-api-minio
+    env_file:
+      - .env
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - books_api_network
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    
+
+
+# Network Configuration
+networks:
+  books_api_network:
+    driver: bridge
+    name: books_api_network
+
+# Volume Configuration
+volumes:
+  postgres_data:
+    driver: local
+    name: books_api_postgres_data
+  
+  minio_data:
+    driver: local
+    name: books_api_minio_data
