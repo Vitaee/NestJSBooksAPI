@@ -28,7 +28,7 @@ services:
     build:
       context: .
       dockerfile: ./compose/node/Dockerfile
-      target: 'development'
+      target: 'production' # 'development'
     container_name: books_api_app
     env_file:
       - .env
