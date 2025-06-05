@@ -53,21 +53,21 @@ jobs:
       run: npm run test
       env:
         NODE_ENV: test
-        DATABASE_HOST: localhost
-        DATABASE_PORT: 5432
-        DATABASE_USERNAME: postgres
-        DATABASE_PASSWORD: postgres
-        DATABASE_NAME: books_api_test
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USERNAME: postgres
+        DB_PASSWORD: postgres
+        DB_DATABASE: books_api_test
 
     - name: Run tests with coverage
       run: npm run test:cov
       env:
         NODE_ENV: test
-        DATABASE_HOST: localhost
-        DATABASE_PORT: 5432
-        DATABASE_USERNAME: postgres
-        DATABASE_PASSWORD: postgres
-        DATABASE_NAME: books_api_test
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USERNAME: postgres
+        DB_PASSWORD: postgres
+        DB_DATABASE: books_api_test
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -81,11 +81,11 @@ jobs:
       run: npm run test:e2e
       env:
         NODE_ENV: test
-        DATABASE_HOST: localhost
-        DATABASE_PORT: 5432
-        DATABASE_USERNAME: postgres
-        DATABASE_PASSWORD: postgres
-        DATABASE_NAME: books_api_test
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USERNAME: postgres
+        DB_PASSWORD: postgres
+        DB_DATABASE: books_api_test
 
   build:
     runs-on: ubuntu-latest
