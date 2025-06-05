@@ -225,7 +225,6 @@ npm run migration:revert
 ## Security
 
 - JWT-based authentication
-- Role-based authorization (admin, librarian, user)
 - Input validation and sanitization
 - SQL injection prevention via TypeORM
 - CORS configuration
