@@ -86,7 +86,6 @@ describe('AuthService', () => {
     jest.clearAllMocks();
   });
 
-
   describe('BaseService inherited methods', () => {
     describe('getById', () => {
       it('should return user by ID', async () => {
@@ -223,7 +222,6 @@ describe('AuthService', () => {
       });
     });
   });
-
 
   describe('register', () => {
     const registerDto: RegisterDto = {
@@ -460,8 +458,6 @@ describe('AuthService', () => {
     });
   });
 
-
-
   describe('findUserByEmail', () => {
     it('should find user by email', async () => {
       mockUserRepository.find.mockResolvedValue([mockUser]);
@@ -532,8 +528,6 @@ describe('AuthService', () => {
     });
   });
 
-
-
   describe('JWT token generation', () => {
     it('should generate valid JWT payload structure', async () => {
       mockUserRepository.count.mockResolvedValue(0);
@@ -579,8 +573,6 @@ describe('AuthService', () => {
     });
   });
 
-
-
   describe('error handling', () => {
     it('should handle repository connection errors in getById', async () => {
       mockUserRepository.findOneBy.mockRejectedValue(
@@ -619,7 +611,6 @@ describe('AuthService', () => {
       expect(result).toBeNull();
     });
   });
-
 
   describe('security considerations', () => {
     it('should not expose password in response', async () => {

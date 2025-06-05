@@ -258,7 +258,10 @@ export class MinioService implements IFileStorageService, OnModuleInit {
       if (error.code === 'NotFound') {
         return false;
       }
-      this.logger.logServiceOperation(`Failed to check file existence: ${fileName}`, error);
+      this.logger.logServiceOperation(
+        `Failed to check file existence: ${fileName}`,
+        error,
+      );
       throw new Error(`File existence check failed: ${error.message}`);
     }
   }

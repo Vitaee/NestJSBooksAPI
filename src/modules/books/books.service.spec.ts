@@ -108,7 +108,6 @@ describe('BooksService', () => {
     jest.clearAllMocks();
   });
 
-
   describe('BaseService inherited methods', () => {
     describe('getById', () => {
       it('should return book by ID', async () => {
@@ -243,8 +242,6 @@ describe('BooksService', () => {
       });
     });
   });
-
-
 
   describe('findByAuthor', () => {
     it('should find books by author', async () => {
@@ -426,7 +423,6 @@ describe('BooksService', () => {
     });
   });
 
-
   describe('findByIdAndUser', () => {
     it('should find book by ID and user', async () => {
       mockRepository.findOneBy.mockResolvedValue(mockBook);
@@ -526,7 +522,6 @@ describe('BooksService', () => {
       expect(result).toBe(false);
     });
   });
-
 
   describe('error handling', () => {
     it('should handle repository connection errors', async () => {

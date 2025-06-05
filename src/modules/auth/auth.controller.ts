@@ -26,7 +26,6 @@ import { successResponse } from '../../utils/response.helper';
 @Controller('auth')
 @UsePipes(new ValidationPipe({ transform: true }))
 export class AuthController {
-
   constructor(
     private readonly authService: AuthService,
     private readonly appLogger: AppLoggerService,
@@ -63,7 +62,6 @@ export class AuthController {
     description: 'User with this email already exists',
   })
   async register(@Body() registerDto: RegisterDto) {
-
     try {
       const result = await this.authService.register(registerDto);
 
@@ -117,7 +115,6 @@ export class AuthController {
     description: 'Invalid email or password',
   })
   async login(@Body() loginDto: LoginDto) {
-
     try {
       const result = await this.authService.login(loginDto);
 

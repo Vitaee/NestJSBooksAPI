@@ -7,7 +7,6 @@ import BaseService, {
   PaginatedResult,
 } from '../BaseService';
 
-
 @Injectable()
 export class BooksService extends BaseService<Book> {
   constructor(
@@ -99,14 +98,20 @@ export class BooksService extends BaseService<Book> {
     }
   }
 
-  async searchByTitleForUser(userId: number, searchTerm: string): Promise<Book[]> {
+  async searchByTitleForUser(
+    userId: number,
+    searchTerm: string,
+  ): Promise<Book[]> {
     try {
       return await this.bookRepository
         .createQueryBuilder('book')
         .where('book.userId = :userId', { userId })
-        .andWhere('(book.title ILIKE :searchTerm OR book.author ILIKE :searchTerm)', { 
-          searchTerm: `%${searchTerm}%` 
-        })
+        .andWhere(
+          '(book.title ILIKE :searchTerm OR book.author ILIKE :searchTerm)',
+          {
+            searchTerm: `%${searchTerm}%`,
+          },
+        )
         .getMany();
     } catch (error) {
       this.handleError('searchByTitleForUser', error);

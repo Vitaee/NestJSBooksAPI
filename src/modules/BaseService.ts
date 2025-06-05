@@ -134,11 +134,12 @@ export abstract class BaseService<T extends BaseEntity & ObjectLiteral> {
   ): Promise<PaginatedResult<T>> {
     try {
       const { page, limit, sortBy, sortOrder } = options;
-      
+
       // Validate pagination parameters
       if (page < 1) throw new Error('Page must be greater than 0');
-      if (limit < 1 || limit > 100) throw new Error('Limit must be between 1 and 100');
-      
+      if (limit < 1 || limit > 100)
+        throw new Error('Limit must be between 1 and 100');
+
       const offset = (page - 1) * limit;
 
       const queryOptions: FindManyOptions<T> = {
@@ -288,10 +289,12 @@ export abstract class BaseService<T extends BaseEntity & ObjectLiteral> {
    * Transaction wrapper - useful for complex operations
    */
   async withTransaction<R>(
-    operation: (repository: Repository<T>) => Promise<R>
+    operation: (repository: Repository<T>) => Promise<R>,
   ): Promise<R> {
     return await this.repository.manager.transaction(async (manager) => {
-      const transactionalRepository = manager.getRepository<T>(this.entityTarget);
+      const transactionalRepository = manager.getRepository<T>(
+        this.entityTarget,
+      );
       return await operation(transactionalRepository);
     });
   }
