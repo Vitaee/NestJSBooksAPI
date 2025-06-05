@@ -8,7 +8,7 @@ This repository contains several GitHub Actions workflows to ensure code quality
 **Trigger:** Push to main/master/develop, Pull Requests
 
 **What it does:**
-- Runs tests on Node.js 18.x and 20.x
+- Runs tests on Node.js 22.x and 24.x
 - Sets up PostgreSQL database for testing
 - Executes linting, type checking, unit tests, and e2e tests
 - Generates test coverage reports
