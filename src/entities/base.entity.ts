@@ -6,8 +6,8 @@ import {
   VersionColumn,
 } from 'typeorm';
 
-export abstract class BaseEntity {
-  @PrimaryGeneratedColumn('increment') // or just @PrimaryGeneratedColumn()
+export abstract class AbstractEntity {
+  @PrimaryGeneratedColumn('increment')
   id: number;
 
   @CreateDateColumn({
@@ -27,7 +27,4 @@ export abstract class BaseEntity {
     nullable: true,
   })
   deletedAt?: Date;
-
-  @VersionColumn()
-  version: number;
 }

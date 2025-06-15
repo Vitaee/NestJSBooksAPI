@@ -11,6 +11,7 @@ import * as bcrypt from 'bcryptjs';
 import { AuthService, JwtPayload, AuthResponse } from './auth.service';
 import { User } from '../../entities/user.entity';
 import { RegisterDto, LoginDto } from './dto';
+import { AppLoggerService } from '../../utils/nestjs-logger.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -62,6 +63,13 @@ describe('AuthService', () => {
     decode: jest.fn(),
   };
 
+  const mockLoggerService = {
+    log: jest.fn(),
+    debug: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  } as Partial<AppLoggerService>;
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -74,6 +82,7 @@ describe('AuthService', () => {
           provide: JwtService,
           useValue: mockJwtService,
         },
+        { provide: AppLoggerService, useValue: mockLoggerService },
       ],
     }).compile();
 

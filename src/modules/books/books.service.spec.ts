@@ -11,6 +11,7 @@ import { Book } from '../../entities/book.entity';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
 import { MinioService } from '../../storage/minio.service';
+import { AppLoggerService } from '../../utils/nestjs-logger.service';
 
 describe('BooksService', () => {
   let service: BooksService;
@@ -84,6 +85,14 @@ describe('BooksService', () => {
     getPresignedUrl: jest.fn(),
   };
 
+  const mockLoggerService = {
+    debug: jest.fn(),
+    log: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    verbose: jest.fn(),
+  } as Partial<AppLoggerService>;
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -95,6 +104,10 @@ describe('BooksService', () => {
         {
           provide: MinioService,
           useValue: mockMinioService,
+        },
+        {
+          provide: AppLoggerService,
+          useValue: mockLoggerService,
         },
       ],
     }).compile();

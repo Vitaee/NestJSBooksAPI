@@ -1,11 +1,11 @@
 import { Entity, Column, OneToMany, Index } from 'typeorm';
 import { Exclude } from 'class-transformer';
-import { BaseEntity } from './base.entity';
+import { AbstractEntity } from './base.entity';
 import { Book } from './book.entity';
 
 @Entity('users')
 @Index(['email'], { unique: true })
-export class User extends BaseEntity {
+export class User extends AbstractEntity {
   @Column({ type: 'varchar', length: 255, unique: true })
   email: string;
 

@@ -213,7 +213,7 @@ npm test -- --coverage --testPathPattern=service.spec.ts
 
 ```bash
 # Generate migration
-npm run migration:generate -- --name CreateBookTable
+npm run migration:generate
 
 # Run migrations
 npm run migration:run

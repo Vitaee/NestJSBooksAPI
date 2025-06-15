@@ -8,7 +8,6 @@ import {
   Param,
   Query,
   HttpStatus,
-  HttpException,
   UsePipes,
   ValidationPipe,
   UseInterceptors,
@@ -33,7 +32,6 @@ import { UpdateBookDto } from './dto/update-book.dto';
 import { BookQueryDto } from './dto/book-query.dto';
 import { CurrentUser } from '../auth/decorators/user.decorator';
 import { User } from '../../entities/user.entity';
-import { MinioService } from '../../storage/minio.service';
 import { AppLoggerService } from '../../utils/nestjs-logger.service';
 import {
   successResponse,
@@ -49,7 +47,6 @@ export class BooksController {
 
   constructor(
     private readonly booksService: BooksService,
-    private readonly minioService: MinioService,
     private readonly appLogger: AppLoggerService,
   ) {}
 
@@ -78,50 +75,40 @@ export class BooksController {
       `User ${user.id} (${user.email}) requesting books - Page: ${query.page || 1}, Limit: ${query.limit || 10}, Search: ${query.search || 'none'}`,
     );
 
-    try {
-      const { page = 1, limit = 10, sortBy, sortOrder, author, search } = query;
+    const { page = 1, limit = 10, sortBy, sortOrder, author, search } = query;
 
-      // If search query is provided, search within user's books
-      if (search) {
-        const books = await this.booksService.searchByTitleForUser(
-          user.id,
-          search,
-        );
-        return successResponse(books, 'Books retrieved successfully');
-      }
-
-      // If author filter is provided, filter within user's books
-      if (author) {
-        const books = await this.booksService.findByAuthorForUser(
-          user.id,
-          author,
-        );
-        return successResponse(books, 'Books by author retrieved successfully');
-      }
-
-      // Default pagination for user's books
-      const paginationOptions: PaginationOptions = {
-        page: Number(page),
-        limit: Number(limit),
-        sortBy,
-        sortOrder,
-      };
-
-      const result = await this.booksService.getPaginatedByUser(
+    if (search) {
+      const books = await this.booksService.searchByTitleForUser(
         user.id,
-        paginationOptions,
+        search,
       );
-      return successResponseWithPagination(
-        result.data,
-        result.pagination,
-        'Books retrieved successfully',
-      );
-    } catch (error) {
-      throwErrorResponse(
-        error instanceof Error ? error.message : 'Unknown error occurred',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      return successResponse(books, 'Books retrieved successfully');
     }
+
+    if (author) {
+      const books = await this.booksService.findByAuthorForUser(
+        user.id,
+        author,
+      );
+      return successResponse(books, 'Books by author retrieved successfully');
+    }
+
+    const paginationOptions: PaginationOptions = {
+      page: Number(page),
+      limit: Number(limit),
+      sortBy,
+      sortOrder,
+    };
+
+    const result = await this.booksService.getPaginatedByUser(
+      user.id,
+      paginationOptions,
+    );
+    return successResponseWithPagination(
+      result.data,
+      result.pagination,
+      'Books retrieved successfully',
+    );
   }
 
   /**
@@ -144,23 +131,13 @@ export class BooksController {
     description: 'Book does not belong to the authenticated user',
   })
   async getBookById(@CurrentUser() user: User, @Param('id') id: number) {
-    try {
-      const book = await this.booksService.findByIdAndUser(id, user.id);
+    const book = await this.booksService.findByIdAndUser(id, user.id);
 
-      if (!book) {
-        throwErrorResponse('Book not found', HttpStatus.NOT_FOUND);
-      }
-
-      return successResponse(book, 'Book retrieved successfully');
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throwErrorResponse(
-        error instanceof Error ? error.message : 'Unknown error occurred',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    if (!book) {
+      throwErrorResponse('Book not found', HttpStatus.NOT_FOUND);
     }
+
+    return successResponse(book, 'Book retrieved successfully');
   }
 
   /**
@@ -248,58 +225,12 @@ export class BooksController {
       `User ${user.id} (${user.email}) creating book: "${createBookDto.title}" by ${createBookDto.author}${coverImage ? ' with cover image' : ''}`,
     );
 
-    try {
-      // Check if a book with the same title already exists for this user
-      const titleExists = await this.booksService.titleExistsForUser(
-        user.id,
-        createBookDto.title,
-      );
-      if (titleExists) {
-        throwErrorResponse(
-          `You already have a book with the title "${createBookDto.title}". Please use a different title.`,
-          HttpStatus.CONFLICT,
-        );
-      }
-
-      let coverImageUrl: string | undefined;
-
-      // Upload cover image if provided
-      if (coverImage) {
-        coverImageUrl = await this.uploadCoverImage(coverImage, user);
-      }
-
-      // Create book data with automatically set userId and optional coverImageUrl
-      const bookData = {
-        ...createBookDto,
-        userId: user.id,
-        coverImageUrl,
-      };
-
-      const book = await this.booksService.create(bookData);
-      return successResponse(book, 'Book created successfully');
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      // Handle database constraint violation for duplicate titles
-      if (
-        error.code === '23505' &&
-        error.constraint &&
-        error.constraint.includes('userId') &&
-        error.constraint.includes('title')
-      ) {
-        throwErrorResponse(
-          `You already have a book with the title "${createBookDto.title}". Please use a different title.`,
-          HttpStatus.CONFLICT,
-        );
-      }
-
-      throwErrorResponse(
-        error instanceof Error ? error.message : 'Unknown error occurred',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const book = await this.booksService.createBookForUser(
+      user,
+      createBookDto,
+      coverImage,
+    );
+    return successResponse(book, 'Book created successfully');
   }
 
   /**
@@ -326,43 +257,12 @@ export class BooksController {
     @Param('id') id: number,
     @Body() updateBookDto: UpdateBookDto,
   ) {
-    try {
-      // Check if book exists and belongs to user
-      const existingBook = await this.booksService.findByIdAndUser(id, user.id);
-      if (!existingBook) {
-        throwErrorResponse('Book not found', HttpStatus.NOT_FOUND);
-      }
-
-      // Check if the new title conflicts with existing books (if title is being updated)
-      if (updateBookDto.title && updateBookDto.title !== existingBook!.title) {
-        const titleExists = await this.booksService.titleExistsForUser(
-          user.id,
-          updateBookDto.title,
-        );
-        if (titleExists) {
-          throwErrorResponse(
-            `You already have a book with the title "${updateBookDto.title}". Please use a different title.`,
-            HttpStatus.CONFLICT,
-          );
-        }
-      }
-
-      // Ensure userId cannot be changed
-      const { userId, ...updateData } = updateBookDto as any;
-
-      await this.booksService.update(id, updateData);
-      const updatedBook = await this.booksService.findByIdAndUser(id, user.id);
-
-      return successResponse(updatedBook, 'Book updated successfully');
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throwErrorResponse(
-        error instanceof Error ? error.message : 'Unknown error occurred',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const updatedBook = await this.booksService.updateBookForUser(
+      user,
+      +id,
+      updateBookDto,
+    );
+    return successResponse(updatedBook, 'Book updated successfully');
   }
 
   /**
@@ -384,95 +284,7 @@ export class BooksController {
     description: 'Book does not belong to the authenticated user',
   })
   async deleteBook(@CurrentUser() user: User, @Param('id') id: number) {
-    try {
-      const book = await this.booksService.findByIdAndUser(id, user.id);
-      if (!book) {
-        throwErrorResponse('Book not found', HttpStatus.NOT_FOUND);
-      }
-
-      // Delete cover image from MinIO if it exists
-      if (book!.coverImageUrl) {
-        try {
-          // Extract filename from URL and delete from MinIO
-          const urlParts = book!.coverImageUrl.split('/');
-          const fileName = urlParts[urlParts.length - 1];
-          if (fileName) {
-            await this.minioService.deleteFile(`covers/${user.id}/${fileName}`);
-          }
-        } catch (deleteError) {
-          // Log error but don't fail the book deletion
-          console.warn(`Failed to delete cover image: ${deleteError.message}`);
-        }
-      }
-
-      await this.booksService.delete(id);
-      return successResponse(null, 'Book deleted successfully');
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throwErrorResponse(
-        error instanceof Error ? error.message : 'Unknown error occurred',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  private async uploadCoverImage(
-    coverImage: Express.Multer.File,
-    user: User,
-  ): Promise<string> {
-    try {
-      let coverImageUrl: string = '';
-
-      // Validate file type
-      const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-      if (!allowedMimeTypes.includes(coverImage.mimetype)) {
-        throw new HttpException(
-          {
-            success: false,
-            message: 'Invalid file type. Only JPEG, PNG images are allowed.',
-          },
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      // Validate file size (max 3MB)
-      const maxSize = 3 * 1024 * 1024; // 3MB
-      if (coverImage.size > maxSize) {
-        throw new HttpException(
-          {
-            success: false,
-            message: 'File too large. Maximum size is 3MB.',
-          },
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      // Upload to MinIO with user-specific folder structure
-      const uploadResult = await this.minioService.uploadFile(
-        coverImage.buffer,
-        coverImage.originalname,
-        {
-          fileName: `covers/${user.id}/${Date.now()}-${coverImage.originalname}`,
-          contentType: coverImage.mimetype,
-          metadata: {
-            userId: user.id,
-            uploadedAt: new Date().toISOString(),
-          },
-        },
-      );
-
-      coverImageUrl = uploadResult.url;
-      return coverImageUrl;
-    } catch (uploadError) {
-      throw new HttpException(
-        {
-          success: false,
-          message: `Failed to upload cover image: ${uploadError.message}`,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    await this.booksService.deleteBookForUser(user, +id);
+    return successResponse(null, 'Book deleted successfully');
   }
 }

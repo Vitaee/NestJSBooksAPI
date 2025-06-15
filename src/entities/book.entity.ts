@@ -1,12 +1,12 @@
 import { Entity, Column, Index, ManyToOne, JoinColumn, Unique } from 'typeorm';
-import { BaseEntity } from './base.entity';
+import { AbstractEntity } from './base.entity';
 import { User } from './user.entity';
 
 @Entity('books')
 @Index(['title', 'author'])
 @Index(['userId'])
 @Unique(['userId', 'title'])
-export class Book extends BaseEntity {
+export class Book extends AbstractEntity {
   @Column({ type: 'varchar', length: 255 })
   title: string;
 

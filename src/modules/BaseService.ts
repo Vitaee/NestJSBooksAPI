@@ -7,8 +7,9 @@ import {
   DeepPartial,
   ObjectLiteral,
   EntityTarget,
+  FindOptionsOrder,
 } from 'typeorm';
-import { BaseEntity } from '../entities/base.entity';
+import { AbstractEntity } from '../entities/base.entity';
 
 export interface PaginationOptions {
   page: number;
@@ -29,7 +30,7 @@ export interface PaginatedResult<T> {
   };
 }
 
-export abstract class BaseService<T extends BaseEntity & ObjectLiteral> {
+export abstract class BaseService<T extends AbstractEntity & ObjectLiteral> {
   protected repository: Repository<T>;
   protected entityTarget: EntityTarget<T>;
 
@@ -149,7 +150,9 @@ export abstract class BaseService<T extends BaseEntity & ObjectLiteral> {
       };
 
       if (sortBy) {
-        queryOptions.order = { [sortBy]: sortOrder || 'ASC' } as any;
+        queryOptions.order = {
+          [sortBy]: sortOrder || 'ASC',
+        } as unknown as FindOptionsOrder<T>;
       }
 
       const [data, count] = await this.repository.findAndCount(queryOptions);
